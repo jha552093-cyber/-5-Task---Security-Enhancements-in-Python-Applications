@@ -1,0 +1,181 @@
+================================================================================
+PROJECT REPORT: SECURITY ENHANCEMENTS IN PYTHON APPLICATIONS
+MedSecure Healthcare Patient & Clinical Portal
+================================================================================
+
+Course/Task: Week 5 Task - Security Enhancements in Python Applications
+Target Application: MedSecure Clinical & Patient Portal
+Document: Project & Security Audit Report
+GitHub: https://github.com/jha552093-cyber/-5-Task---Security-Enhancements-in-Python-Applications.git
+
+--------------------------------------------------------------------------------
+1. EXECUTIVE SUMMARY
+--------------------------------------------------------------------------------
+Healthcare web applications manage sensitive personal information, including medical
+histories, doctor notes, Social Security Numbers (SSN), and credit card payments.
+If these applications are poorly coded, cybercriminals can steal patient identities,
+modify medical data, or take full control of the hospital server.
+
+This project evaluated an application called the MedSecure Healthcare Portal.
+- In the initial assessment (the vulnerable baseline), the application suffered
+  from 10 major security flaws, including SQL injection, weak passwords, unencrypted
+  patient data, cross-site scripting (XSS), and arbitrary command execution.
+  Static security scanning with Bandit detected 14 vulnerabilities.
+- We completely redesigned and re-engineered the software into a hardened
+  production-grade system (secure_app).
+- After implementing modern defenses (parameterized queries, AES-128 encryption
+  at rest, PBKDF2 password hashing, input sanitization, and role-based access
+  control), a re-scan with Bandit showed 0 vulnerabilities (100% clean).
+- All 36 automated test cases passed, verifying that every single attack attempt
+  is actively detected and blocked.
+
+--------------------------------------------------------------------------------
+2. PROJECT ARCHITECTURE & STRUCTURE
+--------------------------------------------------------------------------------
+The repository is structured with a clear separation between the vulnerable baseline
+and the secure version:
+
+1. vulnerable_app/ (The Insecure Baseline):
+   A working Flask web application intentionally containing common security
+   mistakes to demonstrate how hackers exploit real-world applications.
+
+2. secure_app/ (The Hardened Application):
+   The production-ready, remediated application implementing defense-in-depth:
+   - crypto.py: Cryptographic engine using PBKDF2-HMAC-SHA256 for passwords and
+     Fernet AES for patient data.
+   - database.py: Secure SQLite database using strictly parameterized queries.
+   - validator.py: Input validation, HTML escaping, and path sanitization.
+   - auth.py: Cryptographic HMAC session tokens and account lockout logic.
+   - storage.py: Safe JSON-based storage and canonical path checking.
+   - logger.py: Structured security event logging with automatic PII masking.
+   - config.py: Hardened settings (debug mode disabled, secure cookie flags).
+
+3. tests/ (Automated Security & Functional Testing):
+   A comprehensive test suite of 36 unit tests, cryptographic checks, and
+   real-world exploit simulations.
+
+4. static_analysis/ (Code Scanners):
+   Bandit configuration files and comparative scan reports proving the reduction
+   of security issues from 14 down to 0.
+
+5. reports/ (Audit Deliverables):
+   Full documentation in Markdown, PDF, Plain Text, and Microsoft Word format.
+
+6. scripts/ (Automation):
+   Command-line tools to run audit comparisons, execute attack simulations,
+   and build the deliverable package.
+
+--------------------------------------------------------------------------------
+3. THE 10 VULNERABILITIES: WHAT WAS WRONG & HOW IT WAS FIXED
+--------------------------------------------------------------------------------
+
+VULNERABILITY 1: SQL Injection (SQLi)
+- The Problem: The app combined user input directly into SQL commands using
+  Python f-strings. An attacker could enter "admin' --" as a username to bypass
+  password verification and log in as the administrator.
+- The Fix: Replaced all string formatting with parameterized queries using SQLite
+  "?" placeholders. The database now treats user input purely as plain text data,
+  never as executable code.
+
+VULNERABILITY 2: Weak Password Storage (MD5)
+- The Problem: Passwords were saved using unsalted MD5 hashes. Modern computers
+  can reverse unsalted MD5 hashes in seconds using pre-calculated rainbow tables.
+- The Fix: Upgraded password hashing to PBKDF2-HMAC-SHA256 with 600,000 iterations
+  and a unique 256-bit random salt for every user. We also used hmac.compare_digest
+  to prevent timing attacks.
+
+VULNERABILITY 3: Plaintext Sensitive Patient Data at Rest
+- The Problem: Social Security Numbers (SSN), medical diagnoses, and credit card
+  numbers were saved in clear text in the database. Anyone accessing the database
+  file could read all patient records.
+- The Fix: Applied Fernet AES-128-CBC authenticated encryption to all sensitive
+  fields before writing them to the database. The data is encrypted at rest and can
+  only be decrypted in memory with the secure master key.
+
+VULNERABILITY 4: Cross-Site Scripting (XSS)
+- The Problem: User search input was reflected directly into the HTML response
+  without sanitization. An attacker could inject malicious JavaScript to steal cookies.
+- The Fix: Implemented context-aware HTML entity escaping (html.escape) and
+  configured Content-Security-Policy (CSP) headers to block unauthorized script
+  execution.
+
+VULNERABILITY 5: Operating System Command Injection
+- The Problem: The network diagnostic feature ran system commands via
+  subprocess.check_output(cmd, shell=True). An attacker could append "; whoami"
+  to execute arbitrary server commands.
+- The Fix: Completely removed the shell subprocess. Replaced it with native
+  Python socket connections (socket.create_connection) to test host connectivity
+  without spawning any OS commands.
+
+VULNERABILITY 6: Path Traversal (Arbitrary File Download)
+- The Problem: The document download feature joined file paths naively. Attackers
+  could supply "../../database.db" to download files outside the storage folder.
+- The Fix: Implemented canonical path boundary checking using os.path.realpath.
+  The system verifies that the resolved target path strictly resides inside the
+  allowed directory.
+
+VULNERABILITY 7: Insecure Deserialization (Python Pickle)
+- The Problem: Data backups were loaded using Python's pickle.loads(). Pickle can
+  execute arbitrary code during unmarshaling, giving attackers instant Remote
+  Code Execution.
+- The Fix: Replaced pickle with standard JSON serialization combined with an
+  HMAC-SHA256 cryptographic signature to ensure data integrity and prevent tampering.
+
+VULNERABILITY 8: Insecure Direct Object References (IDOR)
+- The Problem: Patient records could be viewed by anyone who changed the record ID
+  in the URL (/api/records/2), even without being logged in or having permission.
+- The Fix: Enforced Role-Based Access Control (RBAC) decorators (@login_required,
+  @role_required). Doctors and admins can review records, while patients can only
+  view their own records.
+
+VULNERABILITY 9: Missing Brute-Force & Rate Limiting Protection
+- The Problem: Attackers could run automated scripts to try millions of passwords
+  against user accounts without being stopped or slowed down.
+- The Fix: Added an automated account lockout system. If an account fails
+  authentication 5 consecutive times, it is locked for 5 minutes, and exponential
+  delays are added to repeated requests.
+
+VULNERABILITY 10: Security Misconfigurations & Missing Security Headers
+- The Problem: Flask debug mode was left enabled (debug=True), exposing an
+  interactive web debugger on errors. Session cookies also lacked protection flags.
+- The Fix: Disabled debug mode (debug=False), enabled secure cookie attributes
+  (HttpOnly=True, SameSite='Lax'), and injected modern security headers
+  (X-Content-Type-Options: nosniff, X-Frame-Options: DENY, Strict-Transport-Security).
+
+--------------------------------------------------------------------------------
+4. VERIFICATION & TESTING RESULTS
+--------------------------------------------------------------------------------
+
+A. Static Code Analysis (Bandit Scanner):
+- Baseline Scan: 14 vulnerabilities detected (3 High, 8 Medium, 3 Low).
+- Hardened App Scan: 0 vulnerabilities detected (100% clean).
+
+B. Automated Testing Suite (Pytest):
+- test_crypto_validation.py: 17 passed (verifying PBKDF2 salts, AES encryption, tamper checks).
+- test_functional.py: 9 passed (verifying login workflows, RBAC permissions, audit logging).
+- test_security_attacks.py: 10 passed (simulating live SQLi, XSS, Command Injection, Traversal, IDOR).
+- Total: 36 out of 36 passed (100% pass rate).
+
+--------------------------------------------------------------------------------
+5. INDUSTRY COMPLIANCE ALIGNMENT
+--------------------------------------------------------------------------------
+- HIPAA Security Rule (45 CFR § 164.312): Satisfies technical safeguards for data
+  encryption at rest and in transit, access control, and audit trails.
+- NIST SP 800-63B: Adheres to digital identity guidelines for secure password
+  storage and brute-force mitigation.
+- OWASP Top 10 (2021): Completely mitigates categories A01, A02, A03, A05, A07, and A08.
+- PCI-DSS v4.0: Protects cardholder data through authenticated encryption and
+  account lockout controls.
+
+--------------------------------------------------------------------------------
+6. COMMAND SUMMARY
+--------------------------------------------------------------------------------
+To run the automated suite in terminal:
+  py -m pytest                        # Runs all 36 tests
+  py scripts/simulate_attacks.py      # Runs live side-by-side exploit comparison
+  py scripts/run_audit.py             # Runs static analysis audit (Bandit)
+  py reports/generate_docx_report.py  # Generates Word (.docx) report
+
+================================================================================
+END OF REPORT
+================================================================================
