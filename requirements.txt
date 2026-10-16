@@ -1,0 +1,9 @@
+# MedSecure Healthcare Portal Dependencies
+flask>=3.0.0
+cryptography>=42.0.0
+bandit>=1.7.0
+pytest>=8.0.0
+pytest-cov>=5.0.0
+colorama>=0.4.6
+reportlab>=4.0.0
+markupsafe>=2.1.0

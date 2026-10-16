@@ -1,0 +1,165 @@
+Run started:2026-10-10 13:16:44.870504+00:00
+
+Test results:
+>> Issue: [B404:blacklist] Consider possible security implications associated with the subprocess module.
+   Severity: Low   Confidence: High
+   CWE: CWE-78 (https://cwe.mitre.org/data/definitions/78.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/blacklists/blacklist_imports.html#b404-import-subprocess
+   Location: vulnerable_app\app.py:17:0
+16	import os
+17	import subprocess
+18	from flask import Flask, request, jsonify, make_response
+
+--------------------------------------------------
+>> Issue: [B105:hardcoded_password_string] Possible hardcoded password: 'super_insecure_hardcoded_key_12345'
+   Severity: Low   Confidence: Medium
+   CWE: CWE-259 (https://cwe.mitre.org/data/definitions/259.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b105_hardcoded_password_string.html
+   Location: vulnerable_app\app.py:38:17
+37	# VULNERABLE: Hardcoded weak secret key (CWE-798)
+38	app.secret_key = "super_insecure_hardcoded_key_12345"
+39	# VULNERABLE: Debug mode explicitly enabled (CWE-489)
+
+--------------------------------------------------
+>> Issue: [B602:subprocess_popen_with_shell_equals_true] subprocess call with shell=True identified, security issue.
+   Severity: High   Confidence: High
+   CWE: CWE-78 (https://cwe.mitre.org/data/definitions/78.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b602_subprocess_popen_with_shell_equals_true.html
+   Location: vulnerable_app\app.py:158:17
+157	    try:
+158	        output = subprocess.check_output(command, shell=True, stderr=subprocess.STDOUT, text=True)
+159	        return jsonify({"status": "success", "output": output})
+
+--------------------------------------------------
+>> Issue: [B201:flask_debug_true] A Flask app appears to be run with debug=True, which exposes the Werkzeug debugger and allows the execution of arbitrary code.
+   Severity: High   Confidence: Medium
+   CWE: CWE-94 (https://cwe.mitre.org/data/definitions/94.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b201_flask_debug_true.html
+   Location: vulnerable_app\app.py:211:4
+210	    # Runs in debug mode with all interfaces exposed
+211	    app.run(host="0.0.0.0", port=5000, debug=True)
+
+--------------------------------------------------
+>> Issue: [B104:hardcoded_bind_all_interfaces] Possible binding to all interfaces.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-605 (https://cwe.mitre.org/data/definitions/605.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b104_hardcoded_bind_all_interfaces.html
+   Location: vulnerable_app\app.py:211:17
+210	    # Runs in debug mode with all interfaces exposed
+211	    app.run(host="0.0.0.0", port=5000, debug=True)
+
+--------------------------------------------------
+>> Issue: [B324:hashlib] Use of weak MD5 hash for security. Consider usedforsecurity=False
+   Severity: High   Confidence: High
+   CWE: CWE-327 (https://cwe.mitre.org/data/definitions/327.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b324_hashlib.html
+   Location: vulnerable_app\database.py:30:11
+29	    """
+30	    return hashlib.md5(password.encode("utf-8")).hexdigest()
+31	
+
+--------------------------------------------------
+>> Issue: [B608:hardcoded_sql_expressions] Possible SQL injection vector through string-based query construction.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-89 (https://cwe.mitre.org/data/definitions/89.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b608_hardcoded_sql_expressions.html
+   Location: vulnerable_app\database.py:84:29
+83	            # Notice the raw SQL insertion
+84	            cursor.execute(f"INSERT INTO users (username, password, role, email) VALUES ('{u[0]}', '{u[1]}', '{u[2]}', '{u[3]}')")
+85	
+
+--------------------------------------------------
+>> Issue: [B608:hardcoded_sql_expressions] Possible SQL injection vector through string-based query construction.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-89 (https://cwe.mitre.org/data/definitions/89.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b608_hardcoded_sql_expressions.html
+   Location: vulnerable_app\database.py:93:31
+92	        for r in records:
+93	            cursor.execute(f"""
+94	                INSERT INTO patient_records 
+95	                (patient_name, ssn, date_of_birth, diagnosis, credit_card, doctor_notes, created_by)
+96	                VALUES ('{r[0]}', '{r[1]}', '{r[2]}', '{r[3]}', '{r[4]}', '{r[5]}', {r[6]})
+97	            """)
+98	
+
+--------------------------------------------------
+>> Issue: [B608:hardcoded_sql_expressions] Possible SQL injection vector through string-based query construction.
+   Severity: Medium   Confidence: Low
+   CWE: CWE-89 (https://cwe.mitre.org/data/definitions/89.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b608_hardcoded_sql_expressions.html
+   Location: vulnerable_app\database.py:112:12
+111	    # Direct string formatting - CRITICAL SQL INJECTION VULNERABILITY (CWE-89)
+112	    sql = f"SELECT * FROM users WHERE username = '{username}' AND password = '{pwd_hash}'"
+113	    cursor.execute(sql)
+
+--------------------------------------------------
+>> Issue: [B608:hardcoded_sql_expressions] Possible SQL injection vector through string-based query construction.
+   Severity: Medium   Confidence: Low
+   CWE: CWE-89 (https://cwe.mitre.org/data/definitions/89.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b608_hardcoded_sql_expressions.html
+   Location: vulnerable_app\database.py:127:12
+126	    # SQL Injection via string interpolation
+127	    sql = f"SELECT * FROM patient_records WHERE patient_name LIKE '%{search_term}%' OR diagnosis LIKE '%{search_term}%'"
+128	    cursor.execute(sql)
+
+--------------------------------------------------
+>> Issue: [B608:hardcoded_sql_expressions] Possible SQL injection vector through string-based query construction.
+   Severity: Medium   Confidence: Low
+   CWE: CWE-89 (https://cwe.mitre.org/data/definitions/89.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b608_hardcoded_sql_expressions.html
+   Location: vulnerable_app\database.py:140:12
+139	    cursor = conn.cursor()
+140	    sql = f"SELECT * FROM patient_records WHERE id = {record_id}"
+141	    cursor.execute(sql)
+
+--------------------------------------------------
+>> Issue: [B608:hardcoded_sql_expressions] Possible SQL injection vector through string-based query construction.
+   Severity: Medium   Confidence: Low
+   CWE: CWE-89 (https://cwe.mitre.org/data/definitions/89.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b608_hardcoded_sql_expressions.html
+   Location: vulnerable_app\database.py:153:14
+152	    cursor = conn.cursor()
+153	    sql = f"""
+154	        INSERT INTO patient_records (patient_name, ssn, date_of_birth, diagnosis, credit_card, doctor_notes, created_by)
+155	        VALUES ('{name}', '{ssn}', '{dob}', '{diagnosis}', '{credit_card}', '{notes}', {created_by})
+156	    """
+157	    cursor.execute(sql)
+
+--------------------------------------------------
+>> Issue: [B403:blacklist] Consider possible security implications associated with pickle module.
+   Severity: Low   Confidence: High
+   CWE: CWE-502 (https://cwe.mitre.org/data/definitions/502.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/blacklists/blacklist_imports.html#b403-import-pickle
+   Location: vulnerable_app\storage.py:10:0
+9	import os
+10	import pickle
+11	import base64
+
+--------------------------------------------------
+>> Issue: [B301:blacklist] Pickle and modules that wrap it can be unsafe when used to deserialize untrusted data, possible security issue.
+   Severity: Medium   Confidence: High
+   CWE: CWE-502 (https://cwe.mitre.org/data/definitions/502.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/blacklists/blacklist_calls.html#b301-pickle
+   Location: vulnerable_app\storage.py:48:11
+47	    # Highly dangerous: executes arbitrary Python bytecode/functions
+48	    return pickle.loads(raw_bytes)
+
+--------------------------------------------------
+
+Code scanned:
+	Total lines of code: 476
+	Total lines skipped (#nosec): 0
+	Total potential issues skipped due to specifically being disabled (e.g., #nosec BXXX): 0
+
+Run metrics:
+	Total issues (by severity):
+		Undefined: 0
+		Low: 3
+		Medium: 8
+		High: 3
+	Total issues (by confidence):
+		Undefined: 0
+		Low: 4
+		Medium: 5
+		High: 5
+Files skipped (0):
